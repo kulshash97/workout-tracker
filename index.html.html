@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <title>Core Progressive Tracker</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --success: #22c55e;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --danger: #ef4444;
+      --stat-bg: #111827;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 1.5rem 1rem 3rem 1rem;
+      min-height: 100vh;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    p.subtitle {
+      color: var(--muted);
+      font-size: 0.825rem;
+      margin-top: 0.2rem;
+    }
+
+    /* Step 3: Rest Timer Widget */
+    .timer-card {
+      display: none;
+      background: #172554;
+      border: 1px solid #1e40af;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .timer-card.active {
+      display: block;
+    }
+    .timer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .timer-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .timer-clock {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-progress-bg {
+      background: #1e3a8a;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+    .timer-progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 100%;
+      transition: width 1s linear;
+    }
+    .timer-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .timer-btn {
+      flex: 1;
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+      color: #e0f2fe;
+      border-radius: 6px;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .timer-btn:hover {
+      background: #2563eb;
+    }
+    .timer-btn.btn-stop {
+      background: transparent;
+      border-color: #64748b;
+      color: #94a3b8;
+    }
+    .timer-btn.btn-stop:hover {
+      color: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    /* Main Logging Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 0.9rem;
+    }
+    label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    input {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Step 2: Benchmark Target Card */
+    .benchmark-box {
+      display: none;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px dashed var(--accent);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.9rem;
+      font-size: 0.875rem;
+    }
+    .benchmark-box.active {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .benchmark-title {
+      font-weight: 600;
+      color: var(--accent);
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    .benchmark-value {
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .btn-autofill {
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-autofill:hover {
+      background: var(--accent);
+      color: #0f172a;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    button.btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button.btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Step 4: Progression & Volume Summary Bar */
+    .summary-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      text-align: center;
+    }
+    .metric-num {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 0.15rem;
+    }
+    .metric-desc {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* History & Actions Bar */
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .history-header h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    .action-links {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .btn-action {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+    .btn-action.danger {
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .btn-action.danger:hover {
+      color: var(--danger);
+    }
+
+    .set-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .set-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+    }
+    .set-info strong {
+      display: block;
+      font-size: 0.95rem;
+    }
+    .set-info span {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .set-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .set-stat {
+      text-align: right;
+    }
+    .set-numbers {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .set-onerm {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .btn-delete-set {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0.2rem;
+    }
+    .btn-delete-set:hover {
+      color: var(--danger);
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem 0;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div>
+        <h1>Core Progressive Tracker</h1>
+        <p class="subtitle">First-principles fitness: measure and beat your numbers.</p>
+      </div>
+    </header>
+
+    <!-- Step 3: Rest Timer Widget -->
+    <div id="timerCard" class="timer-card">
+      <div class="timer-header">
+        <span class="timer-label">Rest Interval</span>
+        <div id="timerClock" class="timer-clock">01:30</div>
+      </div>
+      <div class="timer-progress-bg">
+        <div id="timerProgress" class="timer-progress-fill"></div>
+      </div>
+      <div class="timer-controls">
+        <button type="button" id="timerAdd30" class="timer-btn">+30s</button>
+        <button type="button" id="timerSub30" class="timer-btn">-30s</button>
+        <button type="button" id="timerSkip" class="timer-btn btn-stop">Skip Rest</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Summary Analytics Cards -->
+    <div class="summary-metrics">
+      <div class="metric-card">
+        <div id="totalSetsCount" class="metric-num">0</div>
+        <div class="metric-desc">Total Sets</div>
+      </div>
+      <div class="metric-card">
+        <div id="totalVolumeWeight" class="metric-num">0</div>
+        <div class="metric-desc">Total Volume (Tonnage)</div>
+      </div>
+    </div>
+
+    <!-- Workout Entry Form -->
+    <div class="card">
+      <form id="workoutForm">
+        <div class="form-group">
+          <label for="exercise">Exercise Name</label>
+          <input type="text" id="exercise" placeholder="e.g., Bench Press, Squat" required autocomplete="off">
+        </div>
+
+        <!-- Step 2: Benchmark Target Display -->
+        <div id="benchmarkBox" class="benchmark-box">
+          <div>
+            <span class="benchmark-title">Target to Beat</span>
+            <span id="benchmarkText" class="benchmark-value">80 × 8 reps</span>
+          </div>
+          <button type="button" id="autofillBtn" class="btn-autofill">Load Previous</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="weight">Weight (kg / lbs)</label>
+            <input type="number" id="weight" step="any" placeholder="80" required>
+          </div>
+          <div class="form-group">
+            <label for="reps">Reps</label>
+            <input type="number" id="reps" placeholder="8" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">Log Set</button>
+      </form>
+    </div>
+
+    <!-- History & Step 5 Export Options -->
+    <div>
+      <div class="history-header">
+        <h2>Today's Workout</h2>
+        <div class="action-links">
+          <button id="exportCsvBtn" class="btn-action">Export CSV</button>
+          <button id="clearBtn" class="btn-action danger">Clear All</button>
+        </div>
+      </div>
+      <div id="setList" class="set-list">
+        <div class="empty-state">No sets recorded yet. Log your first set above!</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. App State & Persistence
+    let workouts = JSON.parse(localStorage.getItem('workout_logs') || '[]');
+
+    const form = document.getElementById('workoutForm');
+    const exerciseInput = document.getElementById('exercise');
+    const weightInput = document.getElementById('weight');
+    const repsInput = document.getElementById('reps');
+    const setList = document.getElementById('setList');
+    const clearBtn = document.getElementById('clearBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+    // Benchmark Elements
+    const benchmarkBox = document.getElementById('benchmarkBox');
+    const benchmarkText = document.getElementById('benchmarkText');
+    const autofillBtn = document.getElementById('autofillBtn');
+
+    // Timer Elements
+    const timerCard = document.getElementById('timerCard');
+    const timerClock = document.getElementById('timerClock');
+    const timerProgress = document.getElementById('timerProgress');
+    const timerAdd30 = document.getElementById('timerAdd30');
+    const timerSub30 = document.getElementById('timerSub30');
+    const timerSkip = document.getElementById('timerSkip');
+
+    // Summary Metric Elements
+    const totalSetsCount = document.getElementById('totalSetsCount');
+    const totalVolumeWeight = document.getElementById('totalVolumeWeight');
+
+    let currentBenchmark = null;
+    let timerInterval = null;
+    let totalRestSeconds = 90;
+    let remainingSeconds = 90;
+
+    // Step 4: Brzycki 1RM Calculation Formula: Weight * (36 / (37 - Reps))
+    function calculate1RM(weight, reps) {
+      const w = parseFloat(weight);
+      const r = parseInt(reps, 10);
+      if (isNaN(w) || isNaN(r) || r < 1) return null;
+      if (r === 1) return Math.round(w);
+      if (r > 36) return Math.round(w * 1.5);
+      const oneRm = w * (36 / (37 - r));
+      return Math.round(oneRm * 10) / 10;
+    }
+
+    // Audio Chime via Web Audio API
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } catch (err) {}
+    }
+
+    // Timer Logic
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function startRestTimer(duration = 90) {
+      clearInterval(timerInterval);
+      totalRestSeconds = duration;
+      remainingSeconds = duration;
+
+      timerCard.classList.add('active');
+      timerClock.textContent = formatTime(remainingSeconds);
+      timerProgress.style.width = '100%';
+
+      timerInterval = setInterval(() => {
+        remainingSeconds--;
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          timerClock.textContent = '00:00 (Ready!)';
+          timerProgress.style.width = '0%';
+          playBeep();
+          setTimeout(() => {
+            timerCard.classList.remove('active');
+          }, 3500);
+          return;
+        }
+        timerClock.textContent = formatTime(remainingSeconds);
+        const pct = Math.max(0, (remainingSeconds / totalRestSeconds) * 100);
+        timerProgress.style.width = `${pct}%`;
+      }, 1000);
+    }
+
+    timerAdd30.addEventListener('click', () => {
+      remainingSeconds += 30;
+      totalRestSeconds = Math.max(totalRestSeconds, remainingSeconds);
+      timerClock.textContent = formatTime(remainingSeconds);
+    });
+
+    timerSub30.addEventListener('click', () => {
+      if (remainingSeconds > 30) remainingSeconds -= 30;
+      else remainingSeconds = 1;
+      timerClock.textContent = formatTime(remainingSeconds);
+    });
+
+    timerSkip.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      timerCard.classList.remove('active');
+    });
+
+    // Benchmark Target Lookup
+    function updateBenchmark() {
+      const query = exerciseInput.value.trim().toLowerCase();
+      if (!query) {
+        benchmarkBox.classList.remove('active');
+        currentBenchmark = null;
+        return;
+      }
+
+      const previousSet = workouts.find(item => item.exercise.toLowerCase() === query);
+
+      if (previousSet) {
+        currentBenchmark = previousSet;
+        const est1RM = calculate1RM(previousSet.weight, previousSet.reps);
+        benchmarkText.textContent = `${previousSet.weight} × ${previousSet.reps} reps (Est. 1RM: ~${est1RM})`;
+        benchmarkBox.classList.add('active');
+      } else {
+        benchmarkBox.classList.remove('active');
+        currentBenchmark = null;
+      }
+    }
+
+    exerciseInput.addEventListener('input', updateBenchmark);
+
+    autofillBtn.addEventListener('click', () => {
+      if (currentBenchmark) {
+        weightInput.value = currentBenchmark.weight;
+        repsInput.value = currentBenchmark.reps;
+      }
+    });
+
+    // Delete single set item
+    window.deleteSet = function(index) {
+      workouts.splice(index, 1);
+      localStorage.setItem('workout_logs', JSON.stringify(workouts));
+      renderLogs();
+      updateBenchmark();
+    };
+
+    // Render Logs & Step 4 Volume Calculations
+    function renderLogs() {
+      totalSetsCount.textContent = workouts.length;
+
+      const totalTonnage = workouts.reduce((sum, item) => {
+        return sum + (parseFloat(item.weight) * parseInt(item.reps, 10));
+      }, 0);
+      totalVolumeWeight.textContent = totalTonnage.toLocaleString();
+
+      if (workouts.length === 0) {
+        setList.innerHTML = '<div class="empty-state">No sets recorded yet. Log your first set above!</div>';
+        return;
+      }
+
+      setList.innerHTML = workouts.map((item, idx) => {
+        const est1RM = calculate1RM(item.weight, item.reps);
+        return `
+          <div class="set-item">
+            <div class="set-info">
+              <strong>${item.exercise}</strong>
+              <span>${item.time}</span>
+            </div>
+            <div class="set-right">
+              <div class="set-stat">
+                <div class="set-numbers">${item.weight} × ${item.reps}</div>
+                <div class="set-onerm">Est. 1RM: ~${est1RM}</div>
+              </div>
+              <button class="btn-delete-set" onclick="deleteSet(${idx})" title="Delete set">×</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Step 5: Export CSV Download Handler
+    exportCsvBtn.addEventListener('click', () => {
+      if (workouts.length === 0) {
+        alert('No workout data to export yet.');
+        return;
+      }
+
+      const headers = ['Exercise', 'Weight', 'Reps', 'Time', 'Est_1RM', 'Volume'];
+      const rows = workouts.map(item => [
+        `"${item.exercise.replace(/"/g, '""')}"`,
+        item.weight,
+        item.reps,
+        `"${item.time}"`,
+        calculate1RM(item.weight, item.reps),
+        parseFloat(item.weight) * parseInt(item.reps, 10)
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `workout_log_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // Form Submit
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newEntry = {
+        exercise: exerciseInput.value.trim(),
+        weight: weightInput.value,
+        reps: repsInput.value,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      workouts.unshift(newEntry);
+      localStorage.setItem('workout_logs', JSON.stringify(workouts));
+
+      weightInput.value = '';
+      repsInput.value = '';
+      renderLogs();
+      updateBenchmark();
+
+      startRestTimer(90);
+    });
+
+    // Clear All
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Clear your entire workout log?')) {
+        workouts = [];
+        localStorage.removeItem('workout_logs');
+        renderLogs();
+        updateBenchmark();
+        clearInterval(timerInterval);
+        timerCard.classList.remove('active');
+      }
+    });
+
+    // Initial render
+    renderLogs();
+  </script>
+</body>
+</html>
